@@ -93,7 +93,8 @@ class submit_tags extends external_api {
         $formoptions = [
                 'editingcontext' => $editingcontext,
                 'questioncontext' => $questioncontext,
-                'contexts' => $contexts->all()
+                'contexts' => $contexts->all(),
+                'currenttags' => core_tag_tag::get_item_tags('core_question', 'question', $question->id),
         ];
 
         $mform = new tags_form(null, $formoptions, 'post', '', null, $cantag, $data);
