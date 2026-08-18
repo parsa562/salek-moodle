@@ -67,7 +67,8 @@ function qbank_tagquestion_output_fragment_tags_form($args) {
         $formoptions = [
                 'editingcontext' => $editingcontext,
                 'questioncontext' => $questioncontext,
-                'contexts' => $contexts->all()
+                'contexts' => $contexts->all(),
+                'currenttags' => $tagobjects ?? [],
         ];
         $data = [
                 'id' => $question->id,

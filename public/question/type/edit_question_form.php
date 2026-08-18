@@ -385,10 +385,11 @@ abstract class question_edit_form extends question_wizard_form {
         $iseditingcontextcourseoractivity = !empty($editingcoursecontext);
 
         $mform->addElement('header', 'tagsheader', get_string('tags'));
-        $tags = \core_tag_tag::get_tags_by_area_in_contexts('core_question', 'question', $this->contexts->all());
+        $tags = $this->question->tagobjects ?? [];
         $tagstrings = [];
         foreach ($tags as $tag) {
-            $tagstrings[$tag->name] = $tag->name;
+            $tagname = empty($CFG->keeptagnamecase) ? $tag->name : $tag->rawname;
+            $tagstrings[$tagname] = $tagname;
         }
 
         $showstandard = core_tag_area::get_showstandard('core_question', 'question');
@@ -402,8 +403,9 @@ abstract class question_edit_form extends question_wizard_form {
             }
         }
 
+        natcasesort($tagstrings);
         $options = [
-            'tags' => true,
+            'tags' => ($showstandard != core_tag_tag::STANDARD_ONLY),
             'multiple' => true,
             'noselectionstring' => get_string('anytags', 'quiz'),
         ];

@@ -67,10 +67,11 @@ class tag_condition extends condition {
         global $PAGE;
 
         $tags = \core_tag_tag::get_tags_by_area_in_contexts('core_question', 'question', $this->contexts);
+        uasort($tags, static fn($a, $b) => strnatcasecmp($a->get_display_name(), $b->get_display_name()));
         $tagoptions = array_map(function($tag) {
             return [
                 'id' => $tag->id,
-                'name' => $tag->name,
+                'name' => $tag->get_display_name(),
                 'selected' => in_array($tag->id, $this->selectedtagids)
             ];
         }, array_values($tags));
@@ -151,11 +152,12 @@ class tag_condition extends condition {
 
     public function get_initial_values() {
         $tags = \core_tag_tag::get_tags_by_area_in_contexts('core_question', 'question', $this->contexts);
+        uasort($tags, static fn($a, $b) => strnatcasecmp($a->get_display_name(), $b->get_display_name()));
         $values = [];
         foreach ($tags as $tag) {
             $values[] = [
                 'value' => $tag->id,
-                'title' => html_entity_decode($tag->name),
+                'title' => html_entity_decode($tag->get_display_name()),
                 'selected' => in_array($tag->id, $this->selectedtagids)
             ];
         }
