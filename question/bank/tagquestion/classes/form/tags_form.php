@@ -32,6 +32,8 @@ require_once($CFG->dirroot . '/lib/questionlib.php');
 class tags_form extends \moodleform {
 
     public function definition() {
+        global $CFG, $DB;
+
         $mform = $this->_form;
         $customdata = $this->_customdata;
 
@@ -51,14 +53,29 @@ class tags_form extends \moodleform {
         $mform->addElement('static', 'context', '');
 
         if (\core_tag_tag::is_enabled('core_question', 'question')) {
-            $tags = \core_tag_tag::get_tags_by_area_in_contexts('core_question', 'question', $customdata['contexts']);
+            $tags = $customdata['currenttags'] ?? [];
             $tagstrings = [];
             foreach ($tags as $tag) {
-                $tagstrings[$tag->name] = $tag->name;
+                $tagname = $tag->get_display_name();
+                $tagstrings[$tagname] = $tagname;
             }
 
+            $showstandard = \core_tag_area::get_showstandard('core_question', 'question');
+            if ($showstandard != \core_tag_tag::HIDE_STANDARD) {
+                $namefield = empty($CFG->keeptagnamecase) ? 'name' : 'rawname';
+                $standardtags = $DB->get_records('tag',
+                        ['isstandard' => 1,
+                         'tagcollid' => \core_tag_area::get_collection('core', 'question')],
+                        $namefield, 'id,' . $namefield);
+                foreach ($standardtags as $standardtag) {
+                    $tagstrings[$standardtag->$namefield] = $standardtag->$namefield;
+                }
+            }
+
+            natcasesort($tagstrings);
+
             $options = [
-                'tags' => true,
+                'tags' => ($showstandard != \core_tag_tag::STANDARD_ONLY),
                 'multiple' => true,
                 'noselectionstring' => get_string('anytags', 'quiz'),
             ];
