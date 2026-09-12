@@ -150,11 +150,11 @@ const disableDrawerTooltips = (drawerNode) => {
  * @private
  */
 const disableButtonTooltip = (button, enableOnBlur) => {
-    if (button.hasAttribute('data-original-title')) {
-        Tooltip.getInstance(button).disable();
-        button.setAttribute('title', button.dataset.originalTitle);
+    if (button.hasAttribute('data-bs-original-title')) {
+        Tooltip.getInstance(button)?.disable();
+        button.setAttribute('title', button.getAttribute('data-bs-original-title'));
     } else {
-        button.dataset.disabledToggle = button.dataset.toggle;
+        button.dataset.disabledToggle = button.dataset.bsToggle;
         button.removeAttribute('data-bs-toggle');
     }
     if (enableOnBlur) {
@@ -192,7 +192,7 @@ const enableButtonTooltip = (button) => {
         Tooltip.getInstance(button).enable();
         button.removeAttribute('title');
     } else if (button.dataset.disabledToggle) {
-        button.dataset.toggle = button.dataset.disabledToggle;
+        button.dataset.bsToggle = button.dataset.disabledToggle;
         new Tooltip(button);
     }
     delete button.dataset.restoreTooltipOnBlur;
@@ -472,7 +472,7 @@ export default class Drawers {
 
         // Remove open tooltip if still visible.
         let openButton = getDrawerOpenButton(this.drawerNode.id);
-        if (openButton && openButton.hasAttribute('data-original-title')) {
+        if (openButton && openButton.hasAttribute('data-bs-original-title')) {
             Tooltip.getInstance(openButton)?.hide();
         }
 
@@ -541,7 +541,7 @@ export default class Drawers {
         // Hide close button and header content while the drawer is hiding to prevent glitchy effects.
         const closeButton = this.drawerNode.querySelector(SELECTORS.CLOSEBTN);
         // Remove the close button tooltip if visible.
-        if (closeButton.hasAttribute('data-original-title')) {
+        if (closeButton.hasAttribute('data-bs-original-title')) {
             Tooltip.getInstance(closeButton)?.hide();
         }
 
