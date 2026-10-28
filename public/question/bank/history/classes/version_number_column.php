@@ -37,7 +37,8 @@ class version_number_column extends column_base {
     }
 
     protected function display_content($question, $rowclasses): void {
-        print_string('questionversiondata', 'qbank_history', $question->version);
+        // Salek: in a span, so the theme can show it as a small chip.
+        echo \html_writer::span(get_string('questionversiondata', 'qbank_history', $question->version), 'qbank-version');
     }
 
     public function get_extra_classes(): array {

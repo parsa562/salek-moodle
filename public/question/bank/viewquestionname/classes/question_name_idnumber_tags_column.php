@@ -76,6 +76,11 @@ class question_name_idnumber_tags_column extends viewquestionname_column_helper 
 
         echo \html_writer::end_tag('div');
 
+        // Salek: in the question bank card layout, the question type below the name.
+        if ($this->qbank->use_card_layout()) {
+            echo \html_writer::div(\question_bank::get_qtype_name($question->qtype), 'qbank-qtype-name');
+        }
+
         // If the question is invalid, show a warning badge.
         if (!\question_bank::is_qtype_usable($question->qtype)) {
             echo \html_writer::span(get_string('invalidquestiontype', 'question', $question->qtype),
