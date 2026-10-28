@@ -117,6 +117,12 @@ class custom_view extends \core_question\local\bank\view {
             'core_question\local\bank\checkbox_column' . column_base::ID_SEPARATOR . 'checkbox_column',
             'qbank_viewquestiontype\question_type_column' . column_base::ID_SEPARATOR . 'question_type_column',
             'mod_quiz\question\bank\question_name_text_column' . column_base::ID_SEPARATOR . 'question_name_text_column',
+            // Salek: more to choose by: status, version, how often the question is used and who
+            // changed it last (the quiz offered only the type, name and text).
+            'qbank_editquestion\question_status_column' . column_base::ID_SEPARATOR . 'question_status_column',
+            'qbank_history\version_number_column' . column_base::ID_SEPARATOR . 'version_number_column',
+            'qbank_usage\question_usage_column' . column_base::ID_SEPARATOR . 'question_usage_column',
+            'qbank_viewcreator\modifier_name_column' . column_base::ID_SEPARATOR . 'modifier_name_column',
             'mod_quiz\question\bank\preview_action_column'  . column_base::ID_SEPARATOR  . 'preview_action_column',
         ];
 

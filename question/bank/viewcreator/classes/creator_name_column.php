@@ -45,6 +45,10 @@ class creator_name_column extends column_base {
             $u = username_load_fields_from_object($u, $question, 'creator');
             $displaydata['date'] = userdate($question->timecreated, get_string('strftimedatetime', 'langconfig'));
             $displaydata['creator'] = fullname($u);
+            // Salek: initials for the avatar in the question bank card layout.
+            if ($this->qbank->use_card_layout()) {
+                $displaydata['initials'] = \core_user::get_initials($u);
+            }
             echo $PAGE->get_renderer('qbank_viewcreator')->render_creator_name($displaydata);
         }
     }

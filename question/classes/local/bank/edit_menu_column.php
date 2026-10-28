@@ -54,6 +54,21 @@ class edit_menu_column extends column_base {
         $menu = new \action_menu();
         $menu->set_menu_trigger(get_string('edit'));
         $menu->set_boundary('window');
+
+        if ($this->qbank->use_card_layout()) {
+            // Salek: edit and preview as direct icon buttons; the menu (with every action) behind a "more" button.
+            $direct = '';
+            foreach (['qbank_editquestion\\edit_action', 'qbank_previewquestion\\preview_action'] as $key) {
+                $link = isset($actions[$key]) ? $actions[$key]->get_action_menu_link($question) : null;
+                if ($link) {
+                    $direct .= \html_writer::link($link->url,
+                        $OUTPUT->pix_icon($link->icon->pix, '', $link->icon->component),
+                        ['class' => 'qbank-row-action', 'title' => $link->text, 'aria-label' => $link->text]);
+                }
+            }
+            echo \html_writer::start_div('qbank-row-actions') . $direct;
+            $menu->set_kebab_trigger(get_string('moreactions'), $OUTPUT, 'qbank-row-action');
+        }
         foreach ($actions as $action) {
             $action = $action->get_action_menu_link($question);
             if ($action) {
@@ -68,6 +83,9 @@ class edit_menu_column extends column_base {
         }
 
         echo $OUTPUT->render($menu);
+        if ($this->qbank->use_card_layout()) {
+            echo \html_writer::end_div();
+        }
     }
 
     public function get_required_fields(): array {

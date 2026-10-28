@@ -115,12 +115,18 @@ class user_roles_editable extends \core\output\inplace_editable {
         foreach ($viewableroleids as $id) {
             // If this is a student, we only show a subset of the roles.
             if ($this->editable || array_key_exists($id, $this->profileroles)) {
-                $listofroles[] = format_string($this->courseroles[$id]->localname, true, ['context' => $this->context]);
+                // Salek: each role in its own span (with its archetype as a class), so the theme can
+                // show the roles as separate coloured labels.
+                $role = $this->courseroles[$id];
+                $listofroles[] = \html_writer::span(
+                    format_string($role->localname, true, ['context' => $this->context]),
+                    'salek-role salek-role-' . (($role->archetype ?? '') ?: 'custom'));
             }
         }
 
         if (!empty($listofroles)) {
-            $this->displayvalue = implode(', ', $listofroles);
+            // Salek: the comma stays for screen readers only.
+            $this->displayvalue = implode(\html_writer::span(', ', 'visually-hidden'), $listofroles);
         } else if (!empty($roleids) && empty($viewableroleids)) {
             $this->displayvalue = get_string('novisibleroles', 'role');
         } else {

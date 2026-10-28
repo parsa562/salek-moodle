@@ -991,7 +991,53 @@ class view {
      */
     protected function display_question_bank_header(): void {
         global $OUTPUT;
+        if ($this->use_card_layout()) {
+            // Salek: the heading is part of the hero, see display_card_hero().
+            return;
+        }
         echo $OUTPUT->heading(get_string('questionbank', 'question'), 2);
+    }
+
+    /**
+     * Salek: whether this view uses the card layout (a hero with the main actions, then the
+     * question table in a card with its own header and footer).
+     *
+     * Only the question bank page itself; views built on this class (the quiz "Add from the
+     * question bank" dialogue, question history, the column order preview) keep Moodle's layout.
+     *
+     * @return bool
+     */
+    public function use_card_layout(): bool {
+        return static::class === self::class;
+    }
+
+    /**
+     * Salek: the hero at the top of the question bank: heading, current category with its number
+     * of questions, and the plugin controls except "Show question text" (in the table card header).
+     *
+     * It is printed inside #questionscontainer, so it is refreshed with the list when the filters
+     * change; the theme moves it above the filters.
+     *
+     * @param \context $catcontext The context of the category being displayed.
+     * @param int $categoryid The current question category.
+     */
+    protected function display_card_hero(\context $catcontext, int $categoryid): void {
+        global $DB, $OUTPUT;
+        $filtercategory = $this->pagevars['filter']['category']['values'][0] ?? $categoryid;
+        $categoryname = $DB->get_field('question_categories', 'name', ['id' => $filtercategory]);
+
+        $meta = '';
+        if ($categoryname !== false) {
+            $meta = \html_writer::tag('p',
+                \html_writer::span(format_string($categoryname, true, ['context' => $catcontext]), 'qbank-hero-category') .
+                \html_writer::span('', 'qbank-hero-separator', ['aria-hidden' => 'true']) .
+                \html_writer::span(get_string('numquestionsx', 'quiz', $this->get_question_count())),
+                ['class' => 'qbank-hero-meta']);
+        }
+        echo \html_writer::div(
+            \html_writer::div($OUTPUT->heading(get_string('questionbank', 'question'), 2) . $meta, 'qbank-hero-text') .
+            $this->render_plugin_controls($catcontext, $categoryid, except: ['qbank_viewquestiontext']),
+            'qbank-hero');
     }
 
     /**
@@ -1014,9 +1060,26 @@ class view {
      * @param int $categoryid The current question category.
      */
     protected function get_plugin_controls(\core\context $context, int $categoryid): string {
+        return $this->render_plugin_controls($context, $categoryid);
+    }
+
+    /**
+     * Salek: output the question bank controls of some plugins only.
+     *
+     * @param \core\context $context The current context, for permissions checks.
+     * @param int $categoryid The current question category.
+     * @param string[]|null $only Plugin names (e.g. qbank_viewquestiontext) to include; null for all.
+     * @param string[] $except Plugin names to leave out.
+     * @return string
+     */
+    protected function render_plugin_controls(\core\context $context, int $categoryid, ?array $only = null,
+            array $except = []): string {
         global $OUTPUT;
         $orderedcontrols = [];
-        foreach ($this->plugins as $plugin) {
+        foreach ($this->plugins as $componentname => $plugin) {
+            if (($only !== null && !in_array($componentname, $only)) || in_array($componentname, $except)) {
+                continue;
+            }
             $plugincontrols = $plugin->get_question_bank_controls($this, $context, $categoryid);
             foreach ($plugincontrols as $position => $plugincontrol) {
                 if (!array_key_exists($position, $orderedcontrols)) {
@@ -1067,9 +1130,25 @@ class view {
                 'data-contextid' => $this->get_most_specific_context()->id,
             ]
         );
-        echo $this->get_plugin_controls($catcontext, $categoryid);
-
         $questions = $this->load_questions();
+
+        if ($this->use_card_layout()) {
+            $this->display_card_hero($catcontext, $categoryid);
+        } else {
+            echo $this->get_plugin_controls($catcontext, $categoryid);
+        }
+
+        if ($this->use_card_layout()) {
+            // Salek: header of the table card: title, number of questions and "Show question text".
+            // It stays outside the form below, as the "Show question text" control is a form itself;
+            // the theme joins it with .categoryquestionscontainer into one card.
+            echo \html_writer::div(
+                \html_writer::tag('h3',
+                    get_string('questions', 'question') . \html_writer::span($this->get_question_count(), 'qbank-count'),
+                    ['class' => 'qbank-card-title']) .
+                $this->render_plugin_controls($catcontext, $categoryid, only: ['qbank_viewquestiontext']),
+                'qbank-card-header');
+        }
 
         // This html will be refactored in the bulk actions implementation.
         echo \html_writer::start_tag('form', ['action' => $this->baseurl, 'method' => 'post', 'id' => 'questionsubmit']);
@@ -1288,14 +1367,24 @@ class view {
         $pageingurl->param('filter', json_encode($this->pagevars['filter']));
         $pagingbar = new \paging_bar($this->totalcount, $page, $perpage, $pageingurl);
         $pagingbar->pagevar = 'qpage';
-        echo $OUTPUT->render($pagingbar);
+        if (!$this->use_card_layout()) {
+            echo $OUTPUT->render($pagingbar);
+        }
 
         // Table of questions.
         echo \html_writer::start_tag('div',
             ['class' => 'question_table', 'id' => 'question_table']);
         $this->print_table($questions);
         echo \html_writer::end_tag('div');
-        echo $OUTPUT->render($pagingbar);
+        if (!$this->use_card_layout()) {
+            echo $OUTPUT->render($pagingbar);
+        } else {
+            // Salek: card footer with the number of questions and the page links.
+            echo \html_writer::div(
+                \html_writer::span(get_string('numquestionsx', 'quiz', $this->totalcount), 'qbank-card-summary') .
+                ($this->totalcount > $perpage ? $OUTPUT->render($pagingbar) : ''),
+                'qbank-card-footer');
+        }
     }
 
     /**
