@@ -59,6 +59,8 @@
             {{totalscore}} / {{totalmaxscore}} = {{gradedetails}}%
         </p>
     {{/gradedetails}}
+    {{! Salek: the heading and the list only when there are scores (not when grading details are hidden). }}
+    {{#scoredetails.0}}
     {{#str}} scoredetails, qtype_ordering {{/str}}
     <ol class="scoredetails">
         {{#scoredetails}}
@@ -67,4 +69,5 @@
             </li>
         {{/scoredetails}}
     </ol>
+    {{/scoredetails.0}}
 {{/showpartialwrong}}
