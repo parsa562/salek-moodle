@@ -62,6 +62,26 @@ class question_name_text_column extends question_name_column {
         return $fields;
     }
 
+    /**
+     * Salek: sorted by name or by ID number, as the question name column of the question bank
+     * page (the quiz's dialogue offered the name only).
+     */
+    #[\Override]
+    public function is_sortable() {
+        return [
+            'name' => ['field' => 'q.name', 'title' => get_string('questionname', 'question')],
+            'idnumber' => ['field' => 'qbe.idnumber', 'title' => get_string('idnumber', 'question')],
+        ];
+    }
+
+    /**
+     * Salek: a sort saved before the column had two (no subsort) is by name.
+     */
+    #[\Override]
+    public function sort_expression($reverse, $subsort): string {
+        return parent::sort_expression($reverse, $subsort === '' ? 'name' : $subsort);
+    }
+
     #[\Override]
     public function load_additional_data(array $questions) {
         parent::load_additional_data($questions);
