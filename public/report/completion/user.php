@@ -109,10 +109,16 @@ if ($course->id != 1) {
 $rs = $DB->get_recordset_sql($sql);
 if (!$rs->valid()) {
 
+    // Salek: report_completion has no 'nocompletions' or 'nocompletioncoursesenroled' string (the page
+    // showed "[[nocompletions]]"): existing strings with the same meaning.
     if ($course->id != 1) {
-        $error = get_string('nocompletions', 'report_completion'); // TODO: missing string
+        if (empty($course->enablecompletion)) {
+            $error = get_string('completionnotenabledforcourse', 'completion');
+        } else {
+            $error = get_string('nothingtodisplay');
+        }
     } else {
-        $error = get_string('nocompletioncoursesenroled', 'report_completion'); // TODO: missing string
+        $error = get_string('nocourses');
     }
 
     echo $OUTPUT->notification($error);
@@ -154,7 +160,10 @@ foreach ($courses as $type => $infos) {
     // If there are courses with this status
     if (!empty($infos)) {
 
-        echo '<h1 align="center">'.get_string($type, 'report_completion').'</h1>';
+        // Salek: report_completion has no 'unstarted', 'inprogress' or 'complete' string (the page
+        // showed "[[unstarted]]"): the completion strings with the same meaning.
+        $salekstatusstrings = ['inprogress' => 'inprogress', 'complete' => 'completed', 'unstarted' => 'notyetstarted'];
+        echo '<h1 align="center">'.get_string($salekstatusstrings[$type], 'completion').'</h1>';
         echo '<table class="table generaltable table-hover">';
         echo '<tr class="ccheader">';
         echo '<th class="c0 header" scope="col">'.get_string('course').'</th>';
@@ -227,7 +236,7 @@ foreach ($courses as $type => $infos) {
             if (!empty($activities)) {
 
                 $row = array();
-                $row['title'] = get_string('activitiescomplete', 'report_completion');
+                $row['title'] = get_string('activitiescompleted', 'completion') /* Salek: was a missing string. */;
                 $row['status'] = $activities_complete.' of '.count($activities);
                 $rows[] = $row;
             }
@@ -263,7 +272,7 @@ foreach ($courses as $type => $infos) {
                         break;
 
                     case 'No':
-                        echo get_string('incomplete', 'report_completion');
+                        echo get_string('notcompleted', 'completion') /* Salek: was a missing string. */;
                         break;
 
                     default:
@@ -273,7 +282,7 @@ foreach ($courses as $type => $infos) {
                 // Display link on first row
                 echo '</td><td class="c3">';
                 if ($first_row) {
-                    echo '<a href="'.$CFG->wwwroot.'/blocks/completionstatus/details.php?course='.$c_course->id.'&user='.$user->id.'">'.get_string('detailedview', 'report_completion').'</a>';
+                    echo '<a href="'.$CFG->wwwroot.'/blocks/completionstatus/details.php?course='.$c_course->id.'&user='.$user->id.'">'.get_string('moredetails', 'completion') /* Salek: was a missing string. */.'</a>';
                 }
                 echo '</td>';
 
