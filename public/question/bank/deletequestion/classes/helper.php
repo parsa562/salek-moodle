@@ -56,9 +56,15 @@ class helper {
         // Get the names of all the questions.
         $questions = $DB->get_records_list('question', 'id', $questionids, '', 'id, name');
 
+        // Which of the versions are in use, asked for all of them at once (Salek: it was asked for
+        // each version, a few database queries each; the question bank builds this message for
+        // every question it lists, so a page of 100 questions of about 20 versions each sent
+        // about 5000 queries and took seconds).
+        $inuseids = self::get_questions_in_use($questionids);
+
         // Build the message.
         foreach ($questionids as $questionid) {
-            if (questions_in_use([$questionid])) {
+            if (isset($inuseids[$questionid])) {
                 $questionnames .= '* ';
                 $inuse = true;
             }
@@ -95,6 +101,72 @@ class helper {
         }
 
         return [$confirmtitle, $message];
+    }
+
+    /**
+     * Which of these questions are in use: for each of them, the answer questions_in_use() gives,
+     * but asked for all of them at once where it can be.
+     *
+     * A question is in use when an activity refers to it (question_reference_manager) or when a
+     * plugin says so (the questions_in_use callback: in core only the quiz, for its attempts that
+     * are not previews). The quiz's answer is asked here for all the questions in one query; any
+     * other plugin's (and the deprecated question_list_instances callbacks), which only answer
+     * yes or no for a list, are asked for each question still not found in use, as before.
+     *
+     * @param array $questionids Question ids.
+     * @return array The ids of those in use, as keys.
+     */
+    protected static function get_questions_in_use(array $questionids): array {
+        global $DB;
+
+        if (!$questionids) {
+            return [];
+        }
+        // (question_engine::questions_in_use() without usages to look in: always false.)
+
+        // Referred to by an activity.
+        $inuse = array_fill_keys(
+            \core_question\question_reference_manager::questions_with_references($questionids), true);
+
+        // The plugins that say whether they use questions.
+        $callbacksbytype = get_plugins_with_function('questions_in_use');
+        $quiz = ($callbacksbytype['mod']['quiz'] ?? '') === 'quiz_questions_in_use';
+        $others = false;
+        foreach ($callbacksbytype as $type => $callbacks) {
+            foreach ($callbacks as $plugin => $function) {
+                if (!($type === 'mod' && $plugin === 'quiz' && $quiz)) {
+                    $others = true;
+                }
+            }
+        }
+        if (get_plugin_list_with_function('mod', 'question_list_instances')) {
+            $others = true;
+        }
+
+        // The quiz: answered in an attempt that is not a preview (quiz_questions_in_use()).
+        $remaining = array_values(array_diff($questionids, array_keys($inuse)));
+        if ($quiz && $remaining) {
+            [$test, $params] = $DB->get_in_or_equal($remaining);
+            $used = $DB->get_fieldset_sql("
+                    SELECT DISTINCT qa.questionid
+                      FROM {question_attempts} qa
+                     WHERE qa.questionid $test
+                           AND qa.questionusageid IN (SELECT quiza.uniqueid
+                                                        FROM {quiz_attempts} quiza
+                                                       WHERE quiza.preview = 0)", $params);
+            $inuse += array_fill_keys($used, true);
+        }
+
+        // Any other plugin: for each question still not in use, as questions_in_use() asks.
+        if ($others) {
+            foreach ($questionids as $questionid) {
+                if (!isset($inuse[$questionid]) && questions_in_use([$questionid])) {
+                    $inuse[$questionid] = true;
+                }
+            }
+        }
+
+        return $inuse;
     }
 
     /**
